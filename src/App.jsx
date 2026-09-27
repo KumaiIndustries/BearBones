@@ -4,7 +4,10 @@ import { LiquidGlass } from '@ybouane/liquidglass'
 const styles = `
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600&display=swap');
 
-* { box-sizing: border-box; }
+* {
+  box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
 
 html { overscroll-behavior-y: none; }
 
@@ -17,6 +20,16 @@ html { overscroll-behavior-y: none; }
   --ink-faint: #9b958b;
   --accent: #a6192e;
   --accent-wash: #a6192e14;
+  --nav-height: 60px;
+  --nav-bottom-gap: 18px;
+  --visual-viewport-height: 100vh;
+  --visual-viewport-top: 0px;
+  --dashboard-bg-color: #e1e4e0;
+  --dashboard-bg-image:
+    radial-gradient(ellipse at 12% 10%, rgba(174, 132, 116, 0.28) 0%, transparent 42%),
+    radial-gradient(ellipse at 88% 18%, rgba(121, 151, 142, 0.27) 0%, transparent 46%),
+    radial-gradient(ellipse at 24% 68%, rgba(139, 158, 169, 0.23) 0%, transparent 48%),
+    radial-gradient(ellipse at 82% 86%, rgba(191, 177, 148, 0.25) 0%, transparent 44%);
   font-family: 'Inter', Arial, Helvetica, sans-serif;
   color: var(--ink);
   background: var(--paper);
@@ -41,7 +54,7 @@ input { font: inherit; }
    though the real page rendered fine. One child, no ambiguity. */
 .dashboard {
   position: relative;
-  padding: 24px 0 96px;
+  padding: 0 0 96px;
   touch-action: pan-y;
   overscroll-behavior-x: none;
 }
@@ -57,12 +70,9 @@ input { font: inherit; }
   inset: 0;
   z-index: 0;
   pointer-events: none;
-  background-image:
-    radial-gradient(ellipse at 12% 10%, rgba(174, 132, 116, 0.28) 0%, transparent 42%),
-    radial-gradient(ellipse at 88% 18%, rgba(121, 151, 142, 0.27) 0%, transparent 46%),
-    radial-gradient(ellipse at 24% 68%, rgba(139, 158, 169, 0.23) 0%, transparent 48%),
-    radial-gradient(ellipse at 82% 86%, rgba(191, 177, 148, 0.25) 0%, transparent 44%);
-  background-color: #e1e4e0;
+  background-image: var(--dashboard-bg-image);
+  background-color: var(--dashboard-bg-color);
+  background-attachment: fixed;
 }
 
 /* Centered content column, nested inside the full-bleed .dashboard. */
@@ -73,8 +83,8 @@ input { font: inherit; }
   margin: 0 auto;
 }
 
-.page-view--forward { animation: page-enter-forward 240ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
-.page-view--backward { animation: page-enter-backward 240ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+.page-view--forward { animation: page-enter-forward 420ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
+.page-view--backward { animation: page-enter-backward 420ms cubic-bezier(0.2, 0.75, 0.25, 1) both; }
 
 @keyframes page-enter-forward {
   from { opacity: 0.65; transform: translateX(16px); }
@@ -87,13 +97,19 @@ input { font: inherit; }
 }
 
 .app-masthead {
+  position: sticky;
+  top: 0;
+  z-index: 25;
   display: flex;
-  min-height: 58px;
+  min-height: 78px;
   align-items: center;
   justify-content: space-between;
   margin-bottom: 28px;
-  padding: 0 60px 16px 0;
+  padding: 24px 60px 16px 0;
   border-bottom: 1px solid var(--hairline);
+  background-image: var(--dashboard-bg-image);
+  background-color: var(--dashboard-bg-color);
+  background-attachment: fixed;
 }
 
 .brand-lockup {
@@ -141,7 +157,7 @@ input { font: inherit; }
 }
 
 .settings-glass-button {
-  position: absolute !important;
+  position: fixed !important;
   top: calc(21px + env(safe-area-inset-top, 0px)) !important;
   right: max(20px, calc((100vw - 720px) / 2));
   transform: none !important;
@@ -156,6 +172,7 @@ input { font: inherit; }
   background: transparent;
   color: var(--ink-soft);
   cursor: pointer;
+  touch-action: manipulation;
 }
 
 .settings-glass-button svg { width: 21px; height: 21px; }
@@ -164,6 +181,38 @@ input { font: inherit; }
   outline: 2px solid var(--accent);
   outline-offset: 3px;
 }
+
+.top-menu {
+  position: fixed;
+  top: calc(78px + env(safe-area-inset-top, 0px));
+  right: max(20px, calc((100vw - 720px) / 2));
+  z-index: 35;
+  width: 200px;
+  padding: 6px;
+  border: 1px solid var(--hairline);
+  border-radius: 9px;
+  background: rgba(255, 255, 255, 0.96);
+  box-shadow: 0 8px 24px rgba(32, 29, 25, 0.14);
+}
+
+.top-menu-item {
+  display: flex;
+  width: 100%;
+  min-height: 42px;
+  align-items: center;
+  padding: 0 11px;
+  border: 0;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--ink);
+  font: inherit;
+  font-size: 14px;
+  text-align: left;
+  cursor: pointer;
+}
+
+.top-menu-item:hover,
+.top-menu-item:focus-visible { background: var(--paper); }
 
 .page-heading {
   display: flex;
@@ -405,6 +454,40 @@ h1 {
 .calendar-empty,
 .list-empty { padding: 18px 20px; color: var(--ink-soft); font-size: 14px; }
 
+.findit-chat { display: flex; flex-direction: column; }
+.findit-chat .page-heading { margin-bottom: 20px; }
+.findit-conversation { display: flex; min-height: 140px; flex-direction: column; gap: 12px; margin-bottom: 18px; }
+.findit-message { max-width: min(92%, 560px); padding: 12px 14px; border: 1px solid var(--hairline); border-radius: 8px; background: var(--surface); }
+.findit-message--user { align-self: flex-end; border-color: #35483f; background: #35483f; color: #fff; }
+.findit-message-label { margin: 0 0 5px; color: var(--ink-faint); font-size: 11px; font-weight: 600; }
+.findit-message--user .findit-message-label { color: rgba(255, 255, 255, 0.72); }
+.findit-message-content { margin: 0; font-size: 14px; line-height: 1.5; white-space: pre-line; }
+.findit-suggestions { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.findit-prompt { padding: 9px 12px; border: 1px solid var(--hairline); border-radius: 7px; background: rgba(255, 255, 255, 0.7); color: var(--ink-soft); font: inherit; font-size: 12px; text-align: left; cursor: pointer; }
+.findit-prompt:hover { border-color: #aab8af; color: var(--ink); }
+.findit-composer { display: flex; min-height: 54px; align-items: center; gap: 10px; padding: 6px 7px 6px 14px; border: 1px solid var(--hairline); border-radius: 9px; background: var(--surface); }
+.findit-composer input { width: 100%; min-width: 0; padding: 8px 0; border: 0; outline: 0; background: transparent; color: var(--ink); font: inherit; font-size: 14px; }
+.findit-composer input::placeholder { color: var(--ink-faint); }
+.findit-send { display: grid; width: 40px; height: 40px; flex: 0 0 auto; place-items: center; border: 0; border-radius: 7px; background: #35483f; color: #fff; cursor: pointer; }
+.findit-send:disabled { opacity: 0.45; cursor: default; }
+.findit-send svg { width: 20px; height: 20px; }
+
+.app-shell[data-reduce-motion="true"] .page-view--forward,
+.app-shell[data-reduce-motion="true"] .page-view--backward { animation: none; }
+
+.app-shell[data-compact-lists="true"] .assignment-row,
+.app-shell[data-compact-lists="true"] .todo-row { min-height: 56px; padding-top: 10px; padding-bottom: 10px; }
+
+.settings-list { margin: 0; padding: 0; border-top: 1px solid var(--hairline); list-style: none; }
+.settings-row { display: flex; min-height: 74px; align-items: center; justify-content: space-between; gap: 16px; padding: 14px 4px; border-bottom: 1px solid var(--hairline); cursor: pointer; }
+.settings-copy { display: grid; gap: 4px; }
+.settings-title { color: var(--ink); font-size: 14px; font-weight: 500; }
+.settings-description { color: var(--ink-soft); font-size: 12px; line-height: 1.4; }
+.settings-row input { width: 18px; height: 18px; flex: 0 0 auto; accent-color: var(--accent); }
+.settings-back-button { display: inline-flex; min-height: 38px; align-items: center; gap: 7px; padding: 0 10px; border: 1px solid var(--hairline); border-radius: 7px; background: transparent; color: var(--ink-soft); font: inherit; font-size: 13px; cursor: pointer; }
+.settings-back-button:hover { border-color: #aab8af; color: var(--ink); }
+.settings-back-button svg { width: 17px; height: 17px; }
+
 /* --- Bottom navigation (LiquidGlass element) --- */
 /* This element gets handed to LiquidGlass.init() as a glassElement, so its
    background/border/shadow are produced by the WebGL shader instead of CSS.
@@ -412,10 +495,12 @@ h1 {
 
 .bottom-nav {
   position: fixed;
+  top: calc(var(--visual-viewport-top) + var(--visual-viewport-height) - var(--nav-height) - var(--nav-bottom-gap) - env(safe-area-max-inset-bottom, env(safe-area-inset-bottom, 0px)));
   left: 50%;
-  bottom: calc(18px + env(safe-area-inset-bottom, 0px));
+  bottom: auto;
   transform: translateX(-50%);
   display: flex;
+  height: var(--nav-height);
   gap: 4px;
   padding: 6px;
   border-radius: 22px;
@@ -454,9 +539,10 @@ h1 {
 }
 
 @media (max-width: 540px) {
-  .dashboard { padding-top: 20px; padding-bottom: 88px; }
+  :root { --nav-height: 56px; --nav-bottom-gap: 14px; }
+  .dashboard { padding-bottom: 88px; }
   .dashboard-inner { width: calc(100% - 32px); }
-  .app-masthead { min-height: 54px; margin-bottom: 24px; padding-right: 56px; }
+  .app-masthead { min-height: 74px; margin-bottom: 24px; padding: 20px 56px 16px 0; }
   .masthead-term { display: none; }
   .settings-glass-button {
     top: calc(17px + env(safe-area-inset-top, 0px)) !important;
@@ -464,11 +550,11 @@ h1 {
     width: 44px;
     height: 44px;
   }
+  .top-menu { top: calc(74px + env(safe-area-inset-top, 0px)); right: 16px; }
   .page-heading { margin-bottom: 24px; }
   h1 { font-size: 28px; }
   .assignment-row, .todo-row { padding: 13px 14px; }
   .due-date, .todo-course { max-width: 40%; text-align: right; white-space: normal; }
-  .bottom-nav { bottom: calc(14px + env(safe-area-inset-bottom, 0px)); }
   .nav-btn { width: 48px; padding: 10px 0; }
   .calendar-day { min-height: 66px; padding: 6px 4px; gap: 3px; }
   .calendar-event-dot { font-size: 9px; }
@@ -497,6 +583,55 @@ const initialTasks = [
   { id: 2, title: 'Read chapter 6', course: 'ENGL 101', done: false },
   { id: 3, title: 'Submit pre-lab questions', course: 'CHEM 151', done: false },
 ]
+
+function findItAnswer(query, tasks) {
+  const normalizedQuery = query.toLocaleLowerCase()
+  const courses = [...new Set([
+    ...upcomingAssignments.map((assignment) => assignment.course),
+    ...tasks.map((task) => task.course),
+  ])]
+  const course = courses.find((name) => normalizedQuery.includes(name.toLocaleLowerCase()))
+
+  if (course) {
+    const assignments = upcomingAssignments.filter((assignment) => assignment.course === course)
+    const openTasks = tasks.filter((task) => task.course === course && !task.done)
+    const details = [
+      ...assignments.map((assignment) => `Due: ${assignment.title} - ${assignment.due}`),
+      ...(openTasks.length ? [`To do: ${openTasks.map((task) => task.title).join(', ')} (no due date listed)`] : []),
+    ]
+    return details.length ? `${course}\n${details.join('\n')}` : `I couldn't find upcoming items for ${course}.`
+  }
+
+  const requestedDay = ['today', 'tomorrow', 'monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
+    .find((day) => normalizedQuery.includes(day))
+  if (requestedDay || /\b(due|deadline|when)\b/.test(normalizedQuery)) {
+    const matchingAssignments = requestedDay
+      ? upcomingAssignments.filter((assignment) => assignment.due.toLocaleLowerCase().startsWith(requestedDay))
+      : upcomingAssignments
+    return matchingAssignments.length
+      ? matchingAssignments.map((assignment) => `${assignment.course}: ${assignment.title} - ${assignment.due}`).join('\n')
+      : `Nothing is listed as due ${requestedDay}.`
+  }
+
+  if (/\b(timeline|schedule|week|upcoming|next)\b/.test(normalizedQuery)) {
+    const assignmentLines = upcomingAssignments.map((assignment) => `${assignment.course}: ${assignment.title} - ${assignment.due}`)
+    const openTasks = tasks.filter((task) => !task.done)
+    const taskLine = openTasks.length
+      ? `To do (no due dates listed): ${openTasks.map((task) => task.title).join(', ')}`
+      : 'No open to-dos.'
+    return [`Upcoming`, ...assignmentLines, taskLine].join('\n')
+  }
+
+  const terms = normalizedQuery.split(/[^a-z0-9]+/).filter((term) => term.length > 2)
+  const matchingItems = [
+    ...upcomingAssignments.map((assignment) => `${assignment.course}: ${assignment.title} - ${assignment.due}`),
+    ...tasks.map((task) => `${task.course}: ${task.title}${task.done ? ' (complete)' : ' (no due date listed)'}`),
+  ].filter((item) => terms.some((term) => item.toLocaleLowerCase().includes(term)))
+
+  return matchingItems.length
+    ? matchingItems.join('\n')
+    : 'I couldn\'t find a match in the current course data. Try a course code, assignment, due date, or timeline question.'
+}
 
 function AssignmentsIcon() {
   return (
@@ -562,7 +697,7 @@ function ChatIcon() {
 const navItems = [
   { id: 'assignments', label: 'Assignments', Icon: AssignmentsIcon },
   { id: 'calendar', label: 'Calendar', Icon: CalendarIcon },
-  { id: 'chat', label: 'AI chat', Icon: ChatIcon },
+  { id: 'chat', label: 'Find-It', Icon: ChatIcon },
 ]
 
 function App() {
@@ -570,6 +705,19 @@ function App() {
   const [activeTab, setActiveTab] = useState('assignments')
   const [pageDirection, setPageDirection] = useState('forward')
   const [searchQuery, setSearchQuery] = useState('')
+  const [findItDraft, setFindItDraft] = useState('')
+  const [findItMessages, setFindItMessages] = useState([
+    { id: 0, role: 'assistant', content: 'Hi, I’m Find-It. Ask me about a course, due date, or your upcoming timeline.' },
+  ])
+  const [menuOpen, setMenuOpen] = useState(false)
+  const [preferences, setPreferences] = useState(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem('bearbones-preferences') ?? '{}')
+      return { reduceMotion: saved.reduceMotion === true, compactLists: saved.compactLists === true }
+    } catch {
+      return { reduceMotion: false, compactLists: false }
+    }
+  })
   const [today] = useState(() => {
     const date = new Date()
     date.setHours(0, 0, 0, 0)
@@ -580,10 +728,42 @@ function App() {
   const [viewportHeight, setViewportHeight] = useState(() => window.innerHeight)
 
   const rootRef = useRef(null)
+  const dashboardRef = useRef(null)
+  const menuRef = useRef(null)
   const navRef = useRef(null)
   const settingsRef = useRef(null)
+  const lastMenuTouchRef = useRef(0)
   const glassInstanceRef = useRef(null)
   const touchStartRef = useRef(null)
+  const findItMessageIdRef = useRef(1)
+  const settingsReturnTabRef = useRef('assignments')
+
+  useEffect(() => {
+    localStorage.setItem('bearbones-preferences', JSON.stringify(preferences))
+  }, [preferences])
+
+  useEffect(() => {
+    if (!menuOpen) return
+
+    function handlePointerDown(event) {
+      if (!menuRef.current?.contains(event.target) && !settingsRef.current?.contains(event.target)) {
+        setMenuOpen(false)
+      }
+    }
+    function handleKeyDown(event) {
+      if (event.key === 'Escape') {
+        setMenuOpen(false)
+        settingsRef.current?.focus()
+      }
+    }
+
+    document.addEventListener('pointerdown', handlePointerDown)
+    document.addEventListener('keydown', handleKeyDown)
+    return () => {
+      document.removeEventListener('pointerdown', handlePointerDown)
+      document.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [menuOpen])
 
   // Set up LiquidGlass once, on mount.
   useEffect(() => {
@@ -642,12 +822,30 @@ function App() {
       if (ticking) return
       ticking = true
       requestAnimationFrame(() => {
-        glassInstanceRef.current?.markChanged()
+        glassInstanceRef.current?.markChanged(dashboardRef.current)
         ticking = false
       })
     }
     window.addEventListener('scroll', handleScroll, { passive: true })
     return () => window.removeEventListener('scroll', handleScroll)
+  }, [])
+
+  useEffect(() => {
+    const visualViewport = window.visualViewport
+    const root = document.documentElement
+    function updateVisualViewport() {
+      root.style.setProperty('--visual-viewport-height', `${visualViewport?.height ?? window.innerHeight}px`)
+      root.style.setProperty('--visual-viewport-top', `${visualViewport?.offsetTop ?? 0}px`)
+    }
+    updateVisualViewport()
+    visualViewport?.addEventListener('resize', updateVisualViewport)
+    visualViewport?.addEventListener('scroll', updateVisualViewport)
+    window.addEventListener('resize', updateVisualViewport)
+    return () => {
+      visualViewport?.removeEventListener('resize', updateVisualViewport)
+      visualViewport?.removeEventListener('scroll', updateVisualViewport)
+      window.removeEventListener('resize', updateVisualViewport)
+    }
   }, [])
 
   useEffect(() => {
@@ -660,7 +858,14 @@ function App() {
 }, [])
 
   useEffect(() => {
-    glassInstanceRef.current?.markChanged()
+    let nextFrame
+    const firstFrame = requestAnimationFrame(() => {
+      nextFrame = requestAnimationFrame(() => glassInstanceRef.current?.markChanged())
+    })
+    return () => {
+      cancelAnimationFrame(firstFrame)
+      if (nextFrame) cancelAnimationFrame(nextFrame)
+    }
   }, [activeTab])
 
   function toggleTask(id) {
@@ -677,12 +882,46 @@ function App() {
   function navigateToTab(nextTab) {
     if (nextTab === activeTab) return
 
-    const currentPage = activeTab === 'calendar' ? 'calendar' : 'assignments'
-    const nextPage = nextTab === 'calendar' ? 'calendar' : 'assignments'
-    if (currentPage !== nextPage) {
-      setPageDirection(nextPage === 'calendar' ? 'forward' : 'backward')
-    }
+    const pageOrder = [...navItems.map((item) => item.id), 'settings']
+    const currentIndex = pageOrder.indexOf(activeTab)
+    const nextIndex = pageOrder.indexOf(nextTab)
+    setPageDirection(nextIndex > currentIndex ? 'forward' : 'backward')
     setActiveTab(nextTab)
+  }
+
+  function openSettingsPage() {
+    if (activeTab !== 'settings') settingsReturnTabRef.current = activeTab
+    setMenuOpen(false)
+    navigateToTab('settings')
+  }
+
+  function returnFromSettings() {
+    navigateToTab(settingsReturnTabRef.current)
+  }
+
+  function handleMenuPointerUp(event) {
+    if (event.pointerType !== 'touch') return
+    lastMenuTouchRef.current = Date.now()
+    setMenuOpen((open) => !open)
+  }
+
+  function handleMenuClick(event) {
+    if (event.detail > 0 && Date.now() - lastMenuTouchRef.current < 500) return
+    setMenuOpen((open) => !open)
+  }
+
+  function submitFindIt(question = findItDraft) {
+    const content = question.trim()
+    if (!content) return
+
+    const messageId = findItMessageIdRef.current
+    findItMessageIdRef.current += 2
+    setFindItMessages((current) => [
+      ...current,
+      { id: messageId, role: 'user', content },
+      { id: messageId + 1, role: 'assistant', content: findItAnswer(content, tasks) },
+    ])
+    setFindItDraft('')
   }
 
   function handleTouchStart(event) {
@@ -691,7 +930,10 @@ function App() {
       return
     }
 
-    if (event.target.closest('button, input, textarea, select, a, [role="button"]')) {
+    if (
+      event.target.closest('button, input, textarea, select, a, [role="button"]') &&
+      !event.target.closest('.calendar-day')
+    ) {
       touchStartRef.current = null
       return
     }
@@ -709,9 +951,14 @@ function App() {
     const deltaX = touch.clientX - start.x
     const deltaY = touch.clientY - start.y
     if (Math.abs(deltaX) < 60 || Math.abs(deltaX) < Math.abs(deltaY) * 1.25) return
+    if (activeTab === 'settings') {
+      if (deltaX > 0) returnFromSettings()
+      return
+    }
 
-    if (deltaX < 0 && activeTab !== 'calendar') navigateToTab('calendar')
-    if (deltaX > 0 && activeTab === 'calendar') navigateToTab('assignments')
+    const currentIndex = navItems.findIndex((item) => item.id === activeTab)
+    const nextIndex = deltaX < 0 ? currentIndex + 1 : currentIndex - 1
+    if (nextIndex >= 0 && nextIndex < navItems.length) navigateToTab(navItems[nextIndex].id)
   }
 
   const calendarDays = Array.from({ length: 42 }, (_, index) => {
@@ -734,10 +981,16 @@ function App() {
     <>
       <style>{styles}</style>
       {/* LiquidGlass root: the pill's siblings here are what it refracts. */}
-      <div className="app-shell" ref={rootRef}>
+      <div
+        className="app-shell"
+        ref={rootRef}
+        data-reduce-motion={preferences.reduceMotion}
+        data-compact-lists={preferences.compactLists}
+      >
         <main
           id="main"
           className="dashboard"
+          ref={dashboardRef}
           style={{ minHeight: viewportHeight }}
           onTouchStart={handleTouchStart}
           onTouchEnd={handleTouchEnd}
@@ -756,7 +1009,7 @@ function App() {
             <p className="masthead-term">Fall 2026</p>
           </div>
           <div
-            key={activeTab === 'calendar' ? 'calendar' : 'assignments'}
+            key={activeTab}
             className={`page-view--${pageDirection}`}
             onAnimationEnd={(event) => {
               if (event.target === event.currentTarget) glassInstanceRef.current?.markChanged()
@@ -873,6 +1126,106 @@ function App() {
                 )}
               </section>
             </>
+          ) : activeTab === 'chat' ? (
+            <section className="findit-chat" aria-label="Find-It assistant">
+              <div className="page-heading">
+                <div>
+                  <p className="eyebrow">Academic assistant</p>
+                  <h1>Find-It</h1>
+                </div>
+              </div>
+
+              <div className="findit-conversation" role="log" aria-live="polite" aria-relevant="additions">
+                {findItMessages.map((message) => (
+                  <article
+                    className={`findit-message findit-message--${message.role}`}
+                    key={message.id}
+                  >
+                    <p className="findit-message-label">{message.role === 'assistant' ? 'Find-It' : 'You'}</p>
+                    <p className="findit-message-content">{message.content}</p>
+                  </article>
+                ))}
+              </div>
+
+              {findItMessages.length === 1 && (
+                <div className="findit-suggestions" aria-label="Suggested questions">
+                  {['What’s due next?', 'Show my timeline', 'What’s up in MATH 129?'].map((question) => (
+                    <button className="findit-prompt" key={question} type="button" onClick={() => submitFindIt(question)}>
+                      {question}
+                    </button>
+                  ))}
+                </div>
+              )}
+
+              <form
+                className="findit-composer"
+                onSubmit={(event) => {
+                  event.preventDefault()
+                  submitFindIt()
+                }}
+              >
+                <input
+                  aria-label="Ask Find-It about your courses"
+                  placeholder="Ask about a course or due date"
+                  value={findItDraft}
+                  onChange={(event) => setFindItDraft(event.target.value)}
+                />
+                <button className="findit-send" type="submit" aria-label="Send question" disabled={!findItDraft.trim()}>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M12 19V5M6 11l6-6 6 6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                </button>
+              </form>
+            </section>
+          ) : activeTab === 'settings' ? (
+            <section className="settings-page" aria-label="Settings">
+              <div className="page-heading">
+                <div>
+                  <p className="eyebrow">Preferences</p>
+                  <h1>Settings</h1>
+                </div>
+                <button className="settings-back-button" type="button" onClick={returnFromSettings}>
+                  <svg viewBox="0 0 24 24" fill="none" aria-hidden="true">
+                    <path d="M19 12H5M11 18l-6-6 6-6" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" />
+                  </svg>
+                  <span>Back</span>
+                </button>
+              </div>
+
+              <section className="dashboard-section" aria-labelledby="display-settings-title">
+                <div className="section-heading">
+                  <h2 id="display-settings-title">Display</h2>
+                </div>
+                <ul className="settings-list">
+                  <li>
+                    <label className="settings-row">
+                      <span className="settings-copy">
+                        <span className="settings-title">Reduce page motion</span>
+                        <span className="settings-description">Turn off page transition animations.</span>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={preferences.reduceMotion}
+                        onChange={(event) => setPreferences((current) => ({ ...current, reduceMotion: event.target.checked }))}
+                      />
+                    </label>
+                  </li>
+                  <li>
+                    <label className="settings-row">
+                      <span className="settings-copy">
+                        <span className="settings-title">Compact course lists</span>
+                        <span className="settings-description">Show more assignments and tasks at once.</span>
+                      </span>
+                      <input
+                        type="checkbox"
+                        checked={preferences.compactLists}
+                        onChange={(event) => setPreferences((current) => ({ ...current, compactLists: event.target.checked }))}
+                      />
+                    </label>
+                  </li>
+                </ul>
+              </section>
+            </section>
           ) : (
             <>
               <div className="page-heading">
@@ -943,13 +1296,26 @@ function App() {
         <button
           className="settings-glass-button"
           type="button"
-          aria-label="Settings"
-          title="Settings"
+          aria-label="Open menu"
+          aria-haspopup="true"
+          aria-expanded={menuOpen}
+          aria-controls="app-menu"
+          title="Open menu"
           data-config='{"cornerRadius":24,"floating":false}'
           ref={settingsRef}
+          onPointerUp={handleMenuPointerUp}
+          onClick={handleMenuClick}
         >
           <SettingsIcon />
         </button>
+
+        {menuOpen && (
+          <div className="top-menu" id="app-menu" ref={menuRef}>
+            <button className="top-menu-item" type="button" onClick={openSettingsPage}>
+              Settings
+            </button>
+          </div>
+        )}
 
         {/* Direct child of .app-shell, as LiquidGlass requires. */}
         <nav className="bottom-nav" aria-label="Primary" ref={navRef}>
