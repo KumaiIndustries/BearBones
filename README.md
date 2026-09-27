@@ -15,6 +15,10 @@ Install dependencies, then open the native project in Android Studio:
 
 ```bash
 npm install
+
+npm install --save-dev patch-package
+npm install @ybouane/liquidglass
+
 npm run android:open
 ```
 
