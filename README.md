@@ -19,6 +19,7 @@ npm install
 npm install --save-dev patch-package
 npm install @ybouane/liquidglass
 npm install @capacitor/preferences
+npm install @capacitor/dialog
 
 npm run android:open
 ```

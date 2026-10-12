@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { LiquidGlass } from '@ybouane/liquidglass'
 import { saveJSON, loadJSON } from './storage.js';
 import { CapacitorHttp } from '@capacitor/core';
+import { Dialog } from '@capacitor/dialog';
 
 const styles = `
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600&display=swap');
@@ -1091,6 +1092,35 @@ function App() {
 			
 			let changed_data = await checkForSync();
 			if (changed_data) {
+				if (!changed_data['token_good']) {
+					await Dialog.alert({
+						title: 'Bad Canvas Token',
+						message: 'Your canvas token has either expired/not been given. Please input another key in settings.',
+						buttonTitle: 'Dismiss',
+					});
+				}else{
+					let unindexedCourses = [];
+					for (const c of changed_data['courses']) {
+						if (c['last_update'] == -1) {
+							unindexedCourses.push(c['course_name']);
+						}
+					}
+					if (unindexedCourses.length != 0) {
+						let didbegin = "not begun.";
+						if (changed_data['started_index_of_course']) {
+							didbegin = "begun.";
+						}
+						
+						let coursenames = unindexedCourses.join(', ');
+						
+						await Dialog.alert({
+							title: 'The following courses have not yet finished indexing, indexing has '+didbegin,
+							message: 'INDEXING: '+coursenames+'. Please return in a few minutes.',
+							buttonTitle: 'Dismiss',
+						});
+					}
+				}
+				
 				await saveJSON("events", changed_data)
 				await updateUI(changed_data);
 			}
