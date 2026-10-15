@@ -1,5 +1,4 @@
 import { useEffect, useRef, useState } from 'react'
-import { LiquidGlass } from '@ybouane/liquidglass'
 import { saveJSON, loadJSON } from './storage.js';
 import { CapacitorHttp } from '@capacitor/core';
 import { Dialog } from '@capacitor/dialog';
@@ -12,7 +11,37 @@ const styles = `
 	-webkit-tap-highlight-color: transparent;
 }
 
-html { overscroll-behavior-y: none; }
+html, body, #root {
+	width: 100%;
+	height: 100%;
+	margin: 0;
+	overflow: hidden;
+}
+
+.app-shell {
+	position: relative;
+	width: 100%;
+	height: 100dvh;
+	overflow: hidden;
+
+	background-color: var(--dashboard-bg-color);
+	background-image: var(--dashboard-bg-image);
+	background-size: cover;
+}
+
+.dashboard {
+	position: absolute;
+	inset: 0;
+
+	overflow-y: auto;
+	overflow-x: hidden;
+
+	-webkit-overflow-scrolling: touch;
+	overscroll-behavior-y: auto;
+
+	padding: 0 0 96px;
+	touch-action: pan-y;
+}
 
 :root {
 	--paper: #f5f6f3;
@@ -25,8 +54,6 @@ html { overscroll-behavior-y: none; }
 	--accent-wash: #a6192e14;
 	--nav-height: 60px;
 	--nav-bottom-gap: 18px;
-	--visual-viewport-height: 100vh;
-	--visual-viewport-top: 0px;
 	--dashboard-bg-color: #e1e4e0;
 	--dashboard-bg-image:
 		radial-gradient(ellipse at 12% 10%, rgba(174, 132, 116, 0.28) 0%, transparent 42%),
@@ -42,32 +69,8 @@ html { overscroll-behavior-y: none; }
 	-moz-osx-font-smoothing: grayscale;
 }
 
-body { min-width: 320px; min-height: 100dvh; margin: 0; }
 input { font: inherit; }
 
-/* This is the LiquidGlass root. Everything the glass should be able to
-	 refract (the dashboard) lives as a normal sibling of the glass nav,
-	 both as direct children of .app-shell. */
-.app-shell { min-height: 100vh; position: relative; }
-
-/* The background pattern lives directly on .dashboard (the single
-	 non-glass child) rather than on a separate overlapping sibling.
-	 Two overlapping positioned children was tripping up LiquidGlass's own
-	 stacking-context capture — it composited them in the wrong order even
-	 though the real page rendered fine. One child, no ambiguity. */
-.dashboard {
-	position: relative;
-	padding: 0 0 96px;
-	touch-action: pan-y;
-	overscroll-behavior-x: none;
-}
-
-/* Background lives on a nested descendant, not on .dashboard itself.
-	 Painting it directly on the outermost captured element seems to get
-	 dropped by LiquidGlass's capture step (it composited fine right after
-	 we merged it into one element for the cards, but the background
-	 vanished) — moving it one level deeper, onto an ordinary child div,
-	 fixed it. */
 .dashboard-bg {
 	position: absolute;
 	inset: 0;
@@ -179,6 +182,11 @@ input { font: inherit; }
 }
 
 .settings-glass-button svg { width: 21px; height: 21px; }
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+	.bottom-nav,
+	.settings-glass-button { background: rgba(255, 255, 255, 0.85); }
+}
 
 .settings-glass-button:focus-visible {
 	outline: 2px solid var(--accent);
@@ -494,16 +502,17 @@ h1 {
 .settings-row-text input[type="text"] { width: 100%; min-height: 38px; padding: 0 10px; border: 1px solid var(--hairline); border-radius: 7px; background: transparent; color: var(--ink); font: inherit; font-size: 13px; outline: none; }
 .settings-row-text input[type="text"]:focus { border-color: var(--accent); }
 
-/* --- Bottom navigation (LiquidGlass element) --- */
-/* This element gets handed to LiquidGlass.init() as a glassElement, so its
-	 background/border/shadow are produced by the WebGL shader instead of CSS.
-	 It must stay a direct child of .app-shell (the LiquidGlass root). */
+
 
 .bottom-nav {
-	position: fixed;
-	top: calc(var(--visual-viewport-top) + var(--visual-viewport-height) - var(--nav-height) - var(--nav-bottom-gap) - env(safe-area-max-inset-bottom, env(safe-area-inset-bottom, 0px)));
+	position: absolute;
 	left: 50%;
-	bottom: auto;
+	bottom: calc(
+		var(--nav-bottom-gap) +
+		env(safe-area-inset-bottom, 0px)
+	);
+	top: auto;
+
 	transform: translateX(-50%);
 	display: flex;
 	height: var(--nav-height);
@@ -511,12 +520,52 @@ h1 {
 	padding: 6px;
 	border-radius: 22px;
 	z-index: 20;
-	/* Fallback look in case LiquidGlass hasn't initialized yet (or fails) —
-		 the shader output paints over this once the instance is ready. */
-	background: rgba(255, 255, 255, 0.55);
-	backdrop-filter: blur(14px);
-	-webkit-backdrop-filter: blur(14px);
-	box-shadow: 0 10px 28px rgba(32, 29, 25, 0.14);
+}
+
+.bottom-nav,
+.settings-glass-button {
+	background: linear-gradient(180deg, rgba(255, 255, 255, 0.30) 0%, rgba(255, 255, 255, 0.14) 100%);
+	backdrop-filter: blur(6px) saturate(190%) brightness(1.05);
+	-webkit-backdrop-filter: blur(6px) saturate(190%) brightness(1.05);
+	box-shadow:
+		inset 0 1px 0 rgba(255, 255, 255, 0.85),
+		inset 0 -1px 0 rgba(255, 255, 255, 0.25),
+		inset 0 0 0 1px rgba(255, 255, 255, 0.22),
+		inset 0 -10px 16px -10px rgba(255, 255, 255, 0.35),
+		0 1px 2px rgba(32, 29, 25, 0.08),
+		0 10px 28px rgba(32, 29, 25, 0.14);
+}
+
+.bottom-nav::before,
+.settings-glass-button::before {
+	content: "";
+	position: absolute;
+	inset: 0;
+	border-radius: inherit;
+	padding: 1.5px;
+	background: linear-gradient(135deg,
+		rgba(255, 255, 255, 0.9) 0%,
+		rgba(255, 255, 255, 0) 35%,
+		rgba(255, 255, 255, 0) 65%,
+		rgba(255, 255, 255, 0.55) 100%);
+	-webkit-mask: linear-gradient(#000 0 0) content-box, linear-gradient(#000 0 0);
+	-webkit-mask-composite: xor;
+	mask: linear-gradient(#000 0 0) content-box exclude, linear-gradient(#000 0 0);
+	pointer-events: none;
+}
+
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+	.bottom-nav,
+	.settings-glass-button { background: rgba(255, 255, 255, 0.85); }
+}
+
+
+
+
+
+/* No backdrop-filter support: more opaque so text/icons stay legible */
+@supports not ((backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))) {
+	.bottom-nav { background: rgba(255, 255, 255, 0.85); }
 }
 
 .nav-btn {
@@ -571,12 +620,6 @@ h1 {
 	.page-view--forward, .page-view--backward { animation: none; }
 }
 `
-
-//let upcomingAssignments = [
-//	{ course: 'MATH 129', title: 'Problem Set 4', due: 'Today, 11:59 PM', dayOffset: 0 },
-//	{ course: 'ENGL 101', title: 'Reading response', due: 'Tomorrow, 5:00 PM', dayOffset: 1 },
-//	{ course: 'CHEM 151', title: 'Lab report 2', due: 'Monday, 11:59 PM', dayOffset: 2 },
-//]
 
 const weekdays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat']
 
@@ -792,7 +835,6 @@ function App() {
 	const navRef = useRef(null)
 	const settingsRef = useRef(null)
 	const lastMenuTouchRef = useRef(0)
-	const glassInstanceRef = useRef(null)
 	const touchStartRef = useRef(null)
 	const findItMessageIdRef = useRef(1)
 	const settingsReturnTabRef = useRef('assignments')
@@ -823,72 +865,8 @@ function App() {
 			document.removeEventListener('keydown', handleKeyDown)
 		}
 	}, [menuOpen])
-
-	// Set up LiquidGlass once, on mount.
-	useEffect(() => {
-		let cancelled = false
-
-		async function setupGlass() {
-			if (!rootRef.current || !navRef.current || !settingsRef.current) return
-
-			try {
-				const instance = await LiquidGlass.init({
-					root: rootRef.current,
-					glassElements: [navRef.current, settingsRef.current],
-					defaults: {
-						blurAmount: 0.18,
-						refraction: 0.65,
-						chromAberration: 0.06,
-						edgeHighlight: 0.12,
-						specular: 0.18,
-						fresnel: 1,
-						cornerRadius: 22,
-						zRadius: 20,
-						opacity: 1,
-						shadowOpacity: 0.22,
-						shadowSpread: 14,
-						shadowOffsetY: 2,
-						button: false, // hover brightens, press flattens the bevel — nice for nav buttons
-					},
-				})
-
-				if (cancelled) {
-					instance.destroy()
-					return
-				}
-				glassInstanceRef.current = instance
-			} catch (err) {
-				// Falls back to the CSS blur/translucency on .bottom-nav above.
-				console.error('LiquidGlass failed to initialize:', err)
-			}
-		}
-
-		setupGlass()
-
-		return () => {
-			cancelled = true
-			glassInstanceRef.current?.destroy()
-			glassInstanceRef.current = null
-		}
-	}, [])
-
-	// The library only auto-recaptures the background on layout/DOM mutation
-	// triggers it can see. Scrolling changes what's visually behind the pill
-	// without firing one of those, so nudge it manually, rate-limited to rAF.
-	useEffect(() => {
-		let ticking = false
-		function handleScroll() {
-			if (ticking) return
-			ticking = true
-			requestAnimationFrame(() => {
-				glassInstanceRef.current?.markChanged(dashboardRef.current)
-				ticking = false
-			})
-		}
-		window.addEventListener('scroll', handleScroll, { passive: true })
-		return () => window.removeEventListener('scroll', handleScroll)
-	}, [])
-
+	
+	
 	useEffect(() => {
 		const visualViewport = window.visualViewport
 		const root = document.documentElement
@@ -908,24 +886,12 @@ function App() {
 	}, [])
 
 	useEffect(() => {
-	function updateHeight() {
-		setViewportHeight(window.innerHeight)
-		glassInstanceRef.current?.markChanged()
-	}
-	window.addEventListener('resize', updateHeight)
-	return () => window.removeEventListener('resize', updateHeight)
-}, [])
-
-	useEffect(() => {
-		let nextFrame
-		const firstFrame = requestAnimationFrame(() => {
-			nextFrame = requestAnimationFrame(() => glassInstanceRef.current?.markChanged())
-		})
-		return () => {
-			cancelAnimationFrame(firstFrame)
-			if (nextFrame) cancelAnimationFrame(nextFrame)
+		function updateHeight() {
+			setViewportHeight(window.innerHeight)
 		}
-	}, [activeTab])
+		window.addEventListener('resize', updateHeight)
+		return () => window.removeEventListener('resize', updateHeight)
+	}, [])
 
 	function toggleTask(id) {
 		setTasks((currentTasks) =>
@@ -933,9 +899,6 @@ function App() {
 				task.id === id ? { ...task, done: !task.done } : task,
 			),
 		)
-		// Strikethrough text under the pill would otherwise stay stale until
-		// the next auto-triggered recapture.
-		glassInstanceRef.current?.markChanged()
 	}
 
 	function navigateToTab(nextTab) {
@@ -1130,6 +1093,7 @@ function App() {
 		
 	}, []);
 
+
 	const calendarDays = Array.from({ length: 42 }, (_, index) => {
 		const firstDay = new Date(visibleMonth.getFullYear(), visibleMonth.getMonth(), 1)
 		firstDay.setDate(firstDay.getDate() - firstDay.getDay() + index)
@@ -1141,15 +1105,27 @@ function App() {
 		return dateKey(dueDate) === dateKey(date)
 	})
 	const normalizedQuery = searchQuery.trim().toLocaleLowerCase()
-	const matchesSearch = (item) => [item.title, item.course, item.due ?? '']
-		.some((value) => value.toLocaleLowerCase().includes(normalizedQuery))
+	const normalizedQueryList = searchQuery.trim().toLocaleLowerCase().split(' ')
+	const matchesSearch = (item) => {
+		const searchin = ((item.title ?? '') + " " + (item.course ?? '') + " " + (item.due ?? '')).toLocaleLowerCase();
+		
+		// requires the: title, coursename, and due date to 
+		// collectively contain *all* of the words within the search
+		
+		for (const item of normalizedQueryList) {
+			if (!searchin.includes(item)) {
+				return false;
+			}
+		}
+		return true;
+	}
 	const filteredAssignments = upcomingAssignments.filter((item) => item.dayOffset >= 0 && matchesSearch(item))
 	const filteredTasks = tasks.filter(matchesSearch)
 	const selectedAssignments = assignmentsForDate(selectedDate).filter(matchesSearch)
+	
 	return (
 		<>
 			<style>{styles}</style>
-			{/* LiquidGlass root: the pill's siblings here are what it refracts. */}
 			<div
 				className="app-shell"
 				ref={rootRef}
@@ -1160,12 +1136,10 @@ function App() {
 					id="main"
 					className="dashboard"
 					ref={dashboardRef}
-					style={{ minHeight: viewportHeight }}
 					onTouchStart={handleTouchStart}
 					onTouchEnd={handleTouchEnd}
 					onTouchCancel={() => { touchStartRef.current = null }}
 				>
-					<div className="dashboard-bg" aria-hidden="true" />
 					<div className="dashboard-inner">
 					<div className="app-masthead">
 						<div className="brand-lockup">
@@ -1180,9 +1154,6 @@ function App() {
 					<div
 						key={activeTab}
 						className={`page-view--${pageDirection}`}
-						onAnimationEnd={(event) => {
-							if (event.target === event.currentTarget) glassInstanceRef.current?.markChanged()
-						}}
 					>
 					{activeTab === 'calendar' ? (
 						<>
@@ -1263,7 +1234,7 @@ function App() {
 											>
 												<span className="calendar-day-number">{date.getDate()}</span>
 												{dayAssignments.map((assignment) => (
-													<span className="calendar-event-dot" key={assignment.title}>{assignment.title}</span>
+													<span className="calendar-event-dot" key={`${assignment.course}-${assignment.title}-${assignment.due}`}>{assignment.title}</span>
 												))}
 											</button>
 										)
@@ -1281,7 +1252,7 @@ function App() {
 								{selectedAssignments.length ? (
 									<div className="assignment-list">
 										{selectedAssignments.map((assignment) => (
-											<article className="assignment-row" key={assignment.title}>
+											<article className="assignment-row" key={`${assignment.course}-${assignment.title}-${assignment.due}`}>
 												<div>
 													<p className="course-name">{assignment.course}</p>
 													<h3>{assignment.title}</h3>
@@ -1436,7 +1407,7 @@ function App() {
 								</div>
 								<div className="assignment-list">
 									{filteredAssignments.length ? filteredAssignments.map((assignment) => (
-										<article className="assignment-row" key={assignment.title}>
+										<article className="assignment-row" key={`${assignment.course}-${assignment.title}-${assignment.due}`}>
 											<div>
 												<p className="course-name">{assignment.course}</p>
 												<h3>{assignment.title}</h3>
@@ -1500,7 +1471,7 @@ function App() {
 					</div>
 				)}
 
-				{/* Direct child of .app-shell, as LiquidGlass requires. */}
+				{/* Direct child of .app-shell */}
 				<nav className="bottom-nav" aria-label="Primary" ref={navRef}>
 					{navItems.map(({ id, label, Icon }) => (
 						<button

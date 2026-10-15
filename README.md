@@ -1,4 +1,4 @@
-# BearBones On Amdroid
+# BearBones On Android
 
 React/Vite app configured for Capacitor Android.
 
@@ -17,7 +17,6 @@ Install dependencies, then open the native project in Android Studio:
 npm install
 
 npm install --save-dev patch-package
-npm install @ybouane/liquidglass
 npm install @capacitor/preferences
 npm install @capacitor/dialog
 
