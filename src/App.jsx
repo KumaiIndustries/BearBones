@@ -1,7 +1,6 @@
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { saveJSON, loadJSON } from './storage.js';
 import { CapacitorHttp } from '@capacitor/core';
-import { Dialog } from '@capacitor/dialog';
 
 const styles = `
 @import url('https://fonts.googleapis.com/css2?family=Newsreader:ital,opsz,wght@0,6..72,500;0,6..72,600;1,6..72,500&family=Inter:wght@400;500;600&display=swap');
@@ -498,9 +497,49 @@ h1 {
 .settings-back-button { display: inline-flex; min-height: 38px; align-items: center; gap: 7px; padding: 0 10px; border: 1px solid var(--hairline); border-radius: 7px; background: transparent; color: var(--ink-soft); font: inherit; font-size: 13px; cursor: pointer; }
 .settings-back-button:hover { border-color: #aab8af; color: var(--ink); }
 .settings-back-button svg { width: 17px; height: 17px; }
-.settings-row-text { display: flex; flex-direction: column; /* Stack text above and input below */ align-items: stretch;    /* Make children fill the full width */ gap: 12px;               /* Space between the text block and the input */ padding: 14px 4px; border-bottom: 1px solid var(--hairline); }
-.settings-row-text input[type="text"] { width: 100%; min-height: 38px; padding: 0 10px; border: 1px solid var(--hairline); border-radius: 7px; background: transparent; color: var(--ink); font: inherit; font-size: 13px; outline: none; }
-.settings-row-text input[type="text"]:focus { border-color: var(--accent); }
+.settings-canvas-key { display: grid; gap: 12px; padding: 16px 4px; border-bottom: 1px solid var(--hairline); }
+.settings-canvas-key input[type="password"] { width: 100%; min-height: 40px; padding: 0 10px; border: 1px solid var(--hairline); border-radius: 7px; background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; outline: none; }
+.settings-canvas-key input[type="password"]:focus { border-color: var(--accent); }
+.settings-key-status { display: flex; min-height: 40px; align-items: center; justify-content: space-between; gap: 12px; padding: 0 10px; border: 1px solid var(--hairline); border-radius: 7px; background: var(--surface); color: var(--ink-soft); font-size: 13px; }
+.settings-key-status span { display: inline-flex; align-items: center; gap: 8px; }
+.settings-key-status span::before { width: 8px; height: 8px; border-radius: 50%; background: #527761; content: ""; }
+.settings-key-edit { padding: 5px 7px; border: 0; background: transparent; color: #35483f; font: inherit; font-size: 13px; font-weight: 500; text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
+.settings-key-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.settings-test-row { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 4px; }
+.settings-test-button { flex: 0 0 auto; min-height: 38px; padding: 0 12px; border: 1px solid var(--hairline); border-radius: 7px; background: var(--surface); color: var(--ink); font: inherit; font-size: 13px; cursor: pointer; }
+.settings-test-button:hover { border-color: #aab8af; }
+
+.info-dialog-backdrop { position: fixed; inset: 0; z-index: 60; display: grid; place-items: center; padding: 24px; background: rgba(32, 29, 25, 0.36); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
+.info-dialog { display: flex; width: min(100%, 460px); max-height: min(78dvh, 680px); overflow: hidden; border: 1px solid rgba(255, 255, 255, 0.8); border-radius: 16px; background: var(--paper); box-shadow: 0 20px 60px rgba(32, 29, 25, 0.22); }
+.info-dialog-scroll-area { position: relative; display: flex; min-width: 0; min-height: 0; flex: 1 1 auto; margin: 12px 8px 12px 12px; }
+.info-dialog-scroll { min-width: 0; min-height: 0; flex: 1 1 auto; padding: 12px 18px 12px 12px; overflow-x: hidden; overflow-y: auto; overscroll-behavior: contain; scrollbar-width: none; -ms-overflow-style: none; }
+.info-dialog-scroll::-webkit-scrollbar { display: none; }
+.info-dialog-content { min-height: 100%; }
+.custom-scrollbar { position: absolute; top: 12px; right: 0; bottom: 12px; width: 12px; opacity: 0; pointer-events: none; touch-action: none; user-select: none; }
+.custom-scrollbar.is-visible { opacity: 1; pointer-events: auto; }
+.custom-scrollbar::before { position: absolute; top: 0; bottom: 0; left: 5px; width: 2px; border-radius: 2px; background: #e3e6e1; content: ""; }
+.custom-scrollbar-thumb { position: absolute; left: 2px; width: 8px; min-height: 28px; border: 2px solid var(--paper); border-radius: 8px; background: #87978a; cursor: grab; touch-action: none; }
+.custom-scrollbar-thumb:hover { background: #6f8374; }
+.custom-scrollbar-thumb:active { background: #526b59; cursor: grabbing; }
+.info-dialog-kicker { margin: 0 0 8px; color: #35483f; font-size: 10px; font-weight: 600; letter-spacing: 0.12em; text-transform: uppercase; }
+.info-dialog h2 { margin: 0; color: var(--ink); font-family: 'Newsreader', Georgia, serif; font-size: 25px; font-weight: 600; line-height: 1.2; }
+.info-dialog-message { margin: 12px 0 22px; color: var(--ink-soft); font-size: 14px; line-height: 1.55; white-space: pre-line; overflow-wrap: anywhere; }
+.info-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
+.info-dialog-dismiss { min-height: 40px; padding: 0 16px; border: 0; border-radius: 8px; background: #35483f; color: #fff; font: inherit; font-size: 13px; font-weight: 500; cursor: pointer; }
+.info-dialog-dismiss:disabled { opacity: 0.45; cursor: default; }
+.info-dialog-dismiss:focus-visible, .settings-test-button:focus-visible, .setup-link:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; }
+.setup-steps { display: grid; gap: 14px; margin: 20px 0; padding: 0; list-style: none; counter-reset: setup-step; }
+.setup-steps li { position: relative; display: grid; gap: 4px; padding-left: 36px; color: var(--ink-soft); font-size: 13px; line-height: 1.5; counter-increment: setup-step; }
+.setup-steps li::before { position: absolute; left: 0; top: 0; display: grid; width: 24px; height: 24px; place-items: center; border-radius: 50%; background: #35483f; color: #fff; font-size: 12px; font-weight: 600; content: counter(setup-step); }
+.setup-steps strong { color: var(--ink); font-weight: 500; }
+.setup-link { display: inline-block; margin: 0 0 18px; color: #35483f; font-size: 13px; font-weight: 500; text-underline-offset: 3px; }
+.setup-privacy { margin: -4px 0 16px; color: var(--ink-soft); font-size: 12px; line-height: 1.5; }
+.setup-token-field { display: grid; gap: 7px; margin: 0 0 20px; color: var(--ink); font-size: 13px; font-weight: 500; }
+.setup-token-field input { width: 100%; min-height: 42px; padding: 0 11px; border: 1px solid var(--hairline); border-radius: 7px; background: var(--surface); color: var(--ink); font: inherit; font-weight: 400; }
+.setup-token-field input:focus { border-color: var(--accent); outline: 2px solid var(--accent-wash); }
+.help-topic { margin: 18px 0; }
+.help-topic h3 { margin: 0 0 6px; color: var(--ink); font-size: 14px; font-weight: 500; }
+.help-topic p { margin: 0; color: var(--ink-soft); font-size: 13px; line-height: 1.5; }
 
 
 
@@ -606,6 +645,12 @@ h1 {
 		height: 44px;
 	}
 	.top-menu { top: calc(74px + env(safe-area-inset-top, 0px)); right: 16px; }
+	.info-dialog { max-height: min(56dvh, calc(var(--visual-viewport-height, 100dvh) - 48px)); }
+	.info-dialog-scroll-area { margin-right: 6px; }
+	.info-dialog-scroll { padding-right: 18px; }
+	.settings-test-row { align-items: flex-start; }
+	.setup-steps { gap: 8px; margin: 12px 0; }
+	.help-topic { margin: 14px 0; }
 	.page-heading { margin-bottom: 24px; }
 	h1 { font-size: 28px; }
 	.assignment-row, .todo-row { padding: 13px 14px; }
@@ -801,6 +846,109 @@ function parseDateTime(date, time) {
 	return [duetext, daystilldue];
 }
 
+function CustomScrollArea({ children, scrollRef }) {
+	const trackRef = useRef(null)
+	const dragRef = useRef(null)
+	const [scrollbar, setScrollbar] = useState({ visible: false, height: 0, top: 0 })
+
+	const updateScrollbar = useCallback(() => {
+		const scrollElement = scrollRef.current
+		const trackElement = trackRef.current
+		if (!scrollElement || !trackElement) return
+
+		const trackHeight = trackElement.clientHeight
+		const scrollRange = scrollElement.scrollHeight - scrollElement.clientHeight
+		const thumbHeight = Math.min(trackHeight, Math.max(28, trackHeight * scrollElement.clientHeight / scrollElement.scrollHeight))
+		const thumbRange = Math.max(0, trackHeight - thumbHeight)
+		setScrollbar({
+			visible: scrollRange > 0,
+			height: thumbHeight,
+			top: scrollRange > 0 ? scrollElement.scrollTop / scrollRange * thumbRange : 0,
+		})
+	}, [scrollRef])
+
+	useEffect(() => {
+		updateScrollbar()
+		const scrollElement = scrollRef.current
+		const contentElement = scrollElement?.firstElementChild
+		if (!scrollElement || !contentElement || typeof ResizeObserver === 'undefined') return
+
+		const observer = new ResizeObserver(updateScrollbar)
+		observer.observe(scrollElement)
+		observer.observe(contentElement)
+		return () => observer.disconnect()
+	}, [scrollRef, updateScrollbar])
+
+	function handleTrackPointerDown(event) {
+		if (event.target !== trackRef.current) return
+		const scrollElement = scrollRef.current
+		const trackElement = trackRef.current
+		if (!scrollElement || !trackElement) return
+
+		const trackRect = trackElement.getBoundingClientRect()
+		const thumbRange = trackRect.height - scrollbar.height
+		const scrollRange = scrollElement.scrollHeight - scrollElement.clientHeight
+		if (thumbRange <= 0 || scrollRange <= 0) return
+
+		const thumbPosition = Math.max(0, Math.min(thumbRange, event.clientY - trackRect.top - scrollbar.height / 2))
+		scrollElement.scrollTop = thumbPosition / thumbRange * scrollRange
+	}
+
+	function handleThumbPointerDown(event) {
+		const scrollElement = scrollRef.current
+		if (!scrollElement) return
+		event.preventDefault()
+		event.stopPropagation()
+		event.currentTarget.setPointerCapture(event.pointerId)
+		dragRef.current = {
+			pointerId: event.pointerId,
+			startY: event.clientY,
+			startScrollTop: scrollElement.scrollTop,
+		}
+	}
+
+	function handleThumbPointerMove(event) {
+		const drag = dragRef.current
+		const scrollElement = scrollRef.current
+		const trackElement = trackRef.current
+		if (!drag || drag.pointerId !== event.pointerId || !scrollElement || !trackElement) return
+
+		const thumbRange = trackElement.clientHeight - scrollbar.height
+		const scrollRange = scrollElement.scrollHeight - scrollElement.clientHeight
+		if (thumbRange <= 0) return
+		scrollElement.scrollTop = drag.startScrollTop + (event.clientY - drag.startY) * scrollRange / thumbRange
+	}
+
+	function handleThumbPointerEnd(event) {
+		if (dragRef.current?.pointerId === event.pointerId) dragRef.current = null
+	}
+
+	return (
+		<div className="info-dialog-scroll-area">
+			<div className="info-dialog-scroll" ref={scrollRef} onScroll={updateScrollbar}>
+				<div className="info-dialog-content">{children}</div>
+			</div>
+			<div
+				className={scrollbar.visible ? 'custom-scrollbar is-visible' : 'custom-scrollbar'}
+				ref={trackRef}
+				aria-hidden="true"
+				onPointerDown={handleTrackPointerDown}
+			>
+				{scrollbar.visible && (
+					<div
+						className="custom-scrollbar-thumb"
+						style={{ height: `${scrollbar.height}px`, top: `${scrollbar.top}px` }}
+						onPointerDown={handleThumbPointerDown}
+						onPointerMove={handleThumbPointerMove}
+						onPointerUp={handleThumbPointerEnd}
+						onPointerCancel={handleThumbPointerEnd}
+					/>
+				)}
+			</div>
+		</div>
+	)
+}
+
 function App() {
 	const [upcomingAssignments, setUpcomingAssignments] = useState([]);
 	const [tasks, setTasks] = useState(initialTasks)
@@ -812,14 +960,27 @@ function App() {
 		{ id: 0, role: 'assistant', content: 'Hi, I’m Find-It. Ask me about a course, due date, or your upcoming timeline.' },
 	])
 	const [menuOpen, setMenuOpen] = useState(false)
+	const [infoDialog, setInfoDialog] = useState(null)
+	const [canvasSetupOpen, setCanvasSetupOpen] = useState(false)
+	const [canvasSetupDraft, setCanvasSetupDraft] = useState('')
+	const [helpOpen, setHelpOpen] = useState(false)
 	const [preferences, setPreferences] = useState(() => {
 		try {
 			const saved = JSON.parse(localStorage.getItem('bearbones-preferences') ?? '{}')
-			return { reduceMotion: saved.reduceMotion === true, compactLists: saved.compactLists === true, canvasToken: saved.canvasToken }
+			return { reduceMotion: saved.reduceMotion === true, compactLists: saved.compactLists === true, canvasToken: saved.canvasToken ?? "" }
 		} catch {
 			return { reduceMotion: false, compactLists: false, canvasToken: "" }
 		}
 	})
+	const [settingsCanvasEditing, setSettingsCanvasEditing] = useState(() => {
+		try {
+			const saved = JSON.parse(localStorage.getItem('bearbones-preferences') ?? '{}')
+			return !saved.canvasToken
+		} catch {
+			return true
+		}
+	})
+	const [settingsCanvasDraft, setSettingsCanvasDraft] = useState('')
 	const [today] = useState(() => {
 		const date = new Date()
 		date.setHours(0, 0, 0, 0)
@@ -834,6 +995,10 @@ function App() {
 	const menuRef = useRef(null)
 	const navRef = useRef(null)
 	const settingsRef = useRef(null)
+	const infoDialogDismissRef = useRef(null)
+	const activeModalTitleRef = useRef(null)
+	const infoDialogScrollRef = useRef(null)
+	const canvasSyncRef = useRef(null)
 	const lastMenuTouchRef = useRef(0)
 	const touchStartRef = useRef(null)
 	const findItMessageIdRef = useRef(1)
@@ -865,6 +1030,34 @@ function App() {
 			document.removeEventListener('keydown', handleKeyDown)
 		}
 	}, [menuOpen])
+
+	useEffect(() => {
+		if (!infoDialog) return
+
+		infoDialogDismissRef.current?.focus()
+		function handleKeyDown(event) {
+			if (event.key === 'Escape') setInfoDialog(null)
+		}
+
+		document.addEventListener('keydown', handleKeyDown)
+		return () => document.removeEventListener('keydown', handleKeyDown)
+	}, [infoDialog])
+
+	useEffect(() => {
+		if (!canvasSetupOpen && !helpOpen) return
+
+		infoDialogScrollRef.current?.scrollTo({ top: 0 })
+		activeModalTitleRef.current?.focus({ preventScroll: true })
+		function handleKeyDown(event) {
+			if (event.key === 'Escape') {
+				setCanvasSetupOpen(false)
+				setHelpOpen(false)
+			}
+		}
+
+		document.addEventListener('keydown', handleKeyDown)
+		return () => document.removeEventListener('keydown', handleKeyDown)
+	}, [canvasSetupOpen, helpOpen])
 	
 	
 	useEffect(() => {
@@ -914,7 +1107,49 @@ function App() {
 	function openSettingsPage() {
 		if (activeTab !== 'settings') settingsReturnTabRef.current = activeTab
 		setMenuOpen(false)
+		setCanvasSetupOpen(false)
+		setHelpOpen(false)
 		navigateToTab('settings')
+	}
+
+	function openCanvasSetup() {
+		setMenuOpen(false)
+		setHelpOpen(false)
+		setCanvasSetupDraft(preferences.canvasToken)
+		setCanvasSetupOpen(true)
+	}
+
+	function openHelp() {
+		setMenuOpen(false)
+		setCanvasSetupOpen(false)
+		setHelpOpen(true)
+	}
+
+	function saveCanvasSetup(event) {
+		event.preventDefault()
+		const canvasToken = canvasSetupDraft.trim()
+		if (!canvasToken) return
+
+		setPreferences((current) => ({ ...current, canvasToken }))
+		setSettingsCanvasDraft(canvasToken)
+		setSettingsCanvasEditing(false)
+		setCanvasSetupOpen(false)
+		void canvasSyncRef.current?.(canvasToken)
+	}
+
+	function editSettingsCanvasKey() {
+		setSettingsCanvasDraft(preferences.canvasToken)
+		setSettingsCanvasEditing(true)
+	}
+
+	function saveSettingsCanvasKey(event) {
+		event.preventDefault()
+		const canvasToken = settingsCanvasDraft.trim()
+		if (!canvasToken) return
+
+		setPreferences((current) => ({ ...current, canvasToken }))
+		setSettingsCanvasEditing(false)
+		void canvasSyncRef.current?.(canvasToken)
 	}
 
 	function returnFromSettings() {
@@ -1030,12 +1265,12 @@ function App() {
 			setUpcomingAssignments(newAssignments);
 		}
 		
-		async function checkForSync() {
+		async function checkForSync(token = preferences.canvasToken) {
 			try {
 				const options = {
 					url: 'https://bearbones.duckdns.org:3982/sync',
 					headers: { 'Content-Type': 'application/json' },
-					data: { token: preferences.canvasToken }
+					data: { token }
 				};
 				const response = await CapacitorHttp.post(options);
 				return response.data;
@@ -1045,7 +1280,7 @@ function App() {
 			}
 		}
 		
-		async function start() {
+		async function start(token = preferences.canvasToken) {
 			console.log("Start");
 			let localdata = await loadJSON("events");
 			
@@ -1053,13 +1288,12 @@ function App() {
 				await updateUI(localdata);
 			}
 			
-			let changed_data = await checkForSync();
+			let changed_data = await checkForSync(token);
 			if (changed_data) {
 				if (!changed_data['token_good']) {
-					await Dialog.alert({
-						title: 'Bad Canvas Token',
-						message: 'Your canvas token has either expired/not been given. Please input another key in settings.',
-						buttonTitle: 'Dismiss',
+					setInfoDialog({
+						title: 'Canvas key needs attention',
+						message: 'Your Canvas API key is missing or may have expired. Add a valid key in Settings to access course information.',
 					});
 				}else{
 					let unindexedCourses = [];
@@ -1076,10 +1310,9 @@ function App() {
 						
 						let coursenames = unindexedCourses.join(', ');
 						
-						await Dialog.alert({
-							title: 'The following courses have not yet finished indexing, indexing has '+didbegin,
-							message: 'INDEXING: '+coursenames+'. Please return in a few minutes.',
-							buttonTitle: 'Dismiss',
+						setInfoDialog({
+							title: 'Courses still indexing',
+							message: `Indexing has ${didbegin} Courses: ${coursenames}. Please check back in a few minutes.`,
 						});
 					}
 				}
@@ -1089,6 +1322,7 @@ function App() {
 			}
 		}
 		
+		canvasSyncRef.current = start;
 		start();
 		
 	}, []);
@@ -1363,18 +1597,83 @@ function App() {
 											/>
 										</label>
 									</li>
+								</ul>
+							</section>
+
+							<section className="dashboard-section" aria-labelledby="canvas-settings-title">
+								<div className="section-heading">
+									<h2 id="canvas-settings-title">Canvas</h2>
+								</div>
+								<ul className="settings-list">
 									<li>
-										<div className="settings-row-text">
+										<form className="settings-canvas-key" onSubmit={saveSettingsCanvasKey}>
 											<div className="settings-copy">
 												<span className="settings-title">Canvas API Key</span>
 												<span className="settings-description">Required for accessing course information.</span>
 											</div>
-											<input
-												type="text"
-												value={preferences.canvasToken}
-												onChange={(event) => setPreferences((current) => ({ ...current, canvasToken: event.target.value }))}
-												placeholder="Enter your API key..."
-											/>
+											{preferences.canvasToken && !settingsCanvasEditing ? (
+												<div className="settings-key-status">
+													<span>Key already added</span>
+													<button className="settings-key-edit" type="button" onClick={editSettingsCanvasKey}>Edit</button>
+												</div>
+											) : (
+												<>
+													<input
+														type="password"
+														value={settingsCanvasEditing ? settingsCanvasDraft : preferences.canvasToken}
+														onChange={(event) => setSettingsCanvasDraft(event.target.value)}
+														placeholder="Enter your Canvas API key"
+														autoComplete="off"
+													/>
+													<div className="settings-key-actions">
+														{preferences.canvasToken && (
+															<button className="settings-test-button" type="button" onClick={() => setSettingsCanvasEditing(false)}>
+																Cancel
+															</button>
+														)}
+														<button className="info-dialog-dismiss" type="submit" disabled={!settingsCanvasDraft.trim()}>
+															Save key
+														</button>
+													</div>
+												</>
+											)}
+										</form>
+									</li>
+									<li>
+										<div className="settings-test-row">
+											<div className="settings-copy">
+												<span className="settings-title">Need help connecting?</span>
+												<span className="settings-description">Follow the guided Canvas setup.</span>
+											</div>
+											<button className="settings-test-button" type="button" onClick={openCanvasSetup}>
+												Setup guide
+											</button>
+										</div>
+									</li>
+								</ul>
+							</section>
+
+							<section className="dashboard-section" aria-labelledby="messages-settings-title">
+								<div className="section-heading">
+									<h2 id="messages-settings-title">Messages</h2>
+								</div>
+								<ul className="settings-list">
+									<li>
+										<div className="settings-test-row">
+											<div className="settings-copy">
+												<span className="settings-title">Info popup</span>
+												<span className="settings-description">Preview the style used for app messages.</span>
+											</div>
+											<button
+												className="settings-test-button"
+												type="button"
+												onClick={() => setInfoDialog({
+													title: 'Your info popup is working',
+													message: 'This is a preview of the helpful messages you’ll see in BearBones.',
+												})}
+											>
+												Test popup
+											</button>
 										</div>
 									</li>
 								</ul>
@@ -1468,6 +1767,153 @@ function App() {
 						<button className="top-menu-item" type="button" onClick={openSettingsPage}>
 							Settings
 						</button>
+						<button className="top-menu-item" type="button" onClick={openCanvasSetup}>
+							Set up Canvas
+						</button>
+						<button className="top-menu-item" type="button" onClick={openHelp}>
+							Help
+						</button>
+					</div>
+				)}
+
+				{canvasSetupOpen && (
+					<div
+						className="info-dialog-backdrop"
+						onClick={(event) => {
+							if (event.target === event.currentTarget) setCanvasSetupOpen(false)
+						}}
+					>
+						<section className="info-dialog" role="dialog" aria-modal="true" aria-labelledby="canvas-setup-title">
+							<CustomScrollArea scrollRef={infoDialogScrollRef}>
+							<p className="info-dialog-kicker">Canvas · Setup</p>
+							<h2 id="canvas-setup-title" ref={activeModalTitleRef} tabIndex="-1">Connect your Canvas account</h2>
+							<ol className="setup-steps">
+								<li>
+									<strong>Open your school’s Canvas site.</strong>
+									Sign in and open Account → Settings.
+								</li>
+								<li>
+									<strong>Create an access token.</strong>
+									Choose “+ New Access Token” under Approved Integrations and name it BearBones. Set the expiry as far ahead as your school permits, then generate the token.
+								</li>
+								<li>
+									<strong>Copy it and add it below.</strong>
+									Canvas shows the token once. Treat it like a password and don’t share it.
+								</li>
+							</ol>
+							<a
+								className="setup-link"
+								href="https://canvas.instructure.com/doc/api/file.oauth.html#manual-token-generation"
+								target="_blank"
+								rel="noopener noreferrer"
+							>
+								Read Canvas token instructions
+							</a>
+							{preferences.canvasToken ? (
+								<>
+									<p className="setup-privacy">A Canvas key is already added. To change or replace it, go to Settings → Canvas.</p>
+									<div className="info-dialog-actions">
+										<button className="info-dialog-dismiss" type="button" onClick={openSettingsPage}>
+											Go to Settings
+										</button>
+									</div>
+								</>
+							) : (
+								<>
+									<p className="setup-privacy">Your key is saved on this device and sent to the BearBones sync server to retrieve course information. Only continue if you trust this app with your Canvas account.</p>
+									<form onSubmit={saveCanvasSetup}>
+										<label className="setup-token-field">
+											Canvas API key
+											<input
+												type="password"
+												autoComplete="off"
+												value={canvasSetupDraft}
+												onChange={(event) => setCanvasSetupDraft(event.target.value)}
+												placeholder="Paste your token"
+											/>
+										</label>
+										<div className="info-dialog-actions">
+											<button className="settings-test-button" type="button" onClick={() => setCanvasSetupOpen(false)}>
+												Cancel
+											</button>
+											<button className="info-dialog-dismiss" type="submit" disabled={!canvasSetupDraft.trim()}>
+												Save key
+											</button>
+										</div>
+									</form>
+								</>
+							)}
+							</CustomScrollArea>
+						</section>
+					</div>
+				)}
+
+				{helpOpen && (
+					<div
+						className="info-dialog-backdrop"
+						onClick={(event) => {
+							if (event.target === event.currentTarget) setHelpOpen(false)
+						}}
+					>
+						<section className="info-dialog" role="dialog" aria-modal="true" aria-labelledby="help-title">
+							<CustomScrollArea scrollRef={infoDialogScrollRef}>
+							<p className="info-dialog-kicker">BearBones · Help</p>
+							<h2 id="help-title" ref={activeModalTitleRef} tabIndex="-1">How can we help?</h2>
+							<div className="help-topic">
+								<h3>Getting started</h3>
+								<p>Choose “Set up Canvas” from the app menu for the guided steps, or visit Settings → Canvas to update your key.</p>
+							</div>
+							<div className="help-topic">
+								<h3>Canvas key not working?</h3>
+								<p>Check that the key was copied in full and hasn’t expired. Create a new key in your Canvas account if needed, then replace the saved key in Settings.</p>
+							</div>
+							<div className="help-topic">
+								<h3>Courses still indexing?</h3>
+								<p>New course information can take a few minutes to become available. Return to BearBones and check again shortly.</p>
+							</div>
+							<div className="info-dialog-actions">
+								<button className="settings-test-button" type="button" onClick={openCanvasSetup}>
+									Set up Canvas
+								</button>
+								<button className="info-dialog-dismiss" type="button" onClick={() => setHelpOpen(false)}>
+									Close
+								</button>
+							</div>
+							</CustomScrollArea>
+						</section>
+					</div>
+				)}
+
+				{infoDialog && (
+					<div
+						className="info-dialog-backdrop"
+						onClick={(event) => {
+							if (event.target === event.currentTarget) setInfoDialog(null)
+						}}
+					>
+						<section
+							className="info-dialog"
+							role="dialog"
+							aria-modal="true"
+							aria-labelledby="info-dialog-title"
+							aria-describedby="info-dialog-message"
+						>
+							<CustomScrollArea scrollRef={infoDialogScrollRef}>
+							<p className="info-dialog-kicker">BearBones · Information</p>
+							<h2 id="info-dialog-title">{infoDialog.title}</h2>
+							<p className="info-dialog-message" id="info-dialog-message">{infoDialog.message}</p>
+							<div className="info-dialog-actions">
+								<button
+									className="info-dialog-dismiss"
+									type="button"
+									ref={infoDialogDismissRef}
+									onClick={() => setInfoDialog(null)}
+								>
+									Got it
+								</button>
+							</div>
+							</CustomScrollArea>
+						</section>
 					</div>
 				)}
 
